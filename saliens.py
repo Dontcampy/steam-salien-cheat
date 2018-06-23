@@ -1,9 +1,11 @@
-import requests
 import json
+import requests
+
 from time import sleep
 
 # Get from: https://steamcommunity.com/saliengame/gettoken
-TOKEN = ""
+with open("token.json", "r") as f:
+    TOKEN = json.load(f)
 
 s = requests.session()
 s.headers.update({
@@ -22,7 +24,7 @@ def get_zone():
         sleep(30)
         get_zone()
     json_data = result.json()
-    for i in range(3,0,-1):
+    for i in range(3, 0, -1):
         for planet in json_data["response"]["planets"]:
             info_data = {'id': planet["id"]}
             info = s.get("https://community.steam-api.com/ITerritoryControlMinigameService/GetPlanet/v0001/", params=info_data)
@@ -36,7 +38,7 @@ def get_zone():
 
         
 def get_user_info():
-    data = {'access_token': TOKEN}
+    data = {'access_token': TOKEN["token"]}
     result = s.post("https://community.steam-api.com/ITerritoryControlMinigameService/GetPlayerInfo/v0001/", data=data)
     if result.status_code != 200:
         print("Getting user info errored... trying again(after 30s cooldown)")
@@ -47,10 +49,11 @@ def get_user_info():
     else:
         return -1
 
+
 def leave_game(current):
     data = {
         'gameid': current, 
-        'access_token': TOKEN
+        'access_token': TOKEN["token"]
     }  
     result = s.post("https://community.steam-api.com/IMiniGameService/LeaveGame/v0001/", data=data)
     if result.status_code != 200:
@@ -58,10 +61,11 @@ def leave_game(current):
         sleep(30)
         play_game()
 
+
 def join_planet(planet):
     data = {
         'id': planet, 
-        'access_token': TOKEN
+        'access_token': TOKEN["token"]
     }   
     result = s.post("https://community.steam-api.com/ITerritoryControlMinigameService/JoinPlanet/v0001/", data=data)
     if result.status_code != 200:
@@ -71,10 +75,11 @@ def join_planet(planet):
     else:
         print("Joined planet: " + str(planet))
 
+
 def join_zone(zone):
     data = {
         'zone_position': zone,
-        'access_token': TOKEN
+        'access_token': TOKEN["token"]
     }
     result = s.post("https://community.steam-api.com/ITerritoryControlMinigameService/JoinZone/v0001/", data=data)
     if result.status_code != 200 or result.json() == {'response':{}}:
@@ -87,9 +92,9 @@ def join_zone(zone):
 
 def report_score(difficulty):
     data = {
-        'access_token': TOKEN, 
+        'access_token': TOKEN["token"],
         'score': 5*120*(2**(difficulty-1)),
-        'language':'english'
+        'language': 'english'
     }
     result = s.post("https://community.steam-api.com/ITerritoryControlMinigameService/ReportScore/v0001/", data=data)
     if result.status_code != 200 or result.json() == {'response':{}}:
@@ -108,17 +113,18 @@ def play_game():
     print("Finding a planet and zone")
     zone, planet, difficulty = get_zone()
     join_planet(planet)
-    while(1):
+    while 1:
         join_zone(zone)
         print("Sleeping for 1 minute 50 seconds")
         sleep(110)
         report_score(difficulty)
 
-while(1):
+
+while 1:
     try:
         play_game()
     except KeyboardInterrupt:
-        print("User cancelled script");
+        print("User cancelled script")
         exit(1)
     except Exception as e:
         print(e)
